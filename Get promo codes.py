@@ -24,15 +24,17 @@ uClient.close()
 page_soup = soup(page_html, "html.parser")
 
 # Grabs both active and retired shows
-podcasts = page_soup.findAll("div", {"class":"small-12 medium-8 columns"})
-# podcasts[32].h4.a.text # 'Virtual'
-# podcasts[32].h4.a["href"] # '\virtual'
+podcasts = page_soup.findAll("h3", {"class":"broadcast__name"})
+numOfPodcasts = len(podcasts)
+# podcasts[1].a.text # 'Analog(ue)'
+# podcasts[1].a["href"] # '\analogue'
 
 # https://docs.python.org/3/tutorial/errors.html
+# Make dictionary of all the podcast names, partial URLs, and full URLs
 for podcast in podcasts:
 	try:
-		podcast.h4.a["href"]
-		podcast.h4.text
+		podcastURL = podcast.a["href"]
+		podcastText = podcast.a.text
 	except TypeError: # This was being thrown by Master Feed since there's no URL to show
 		pass
 
@@ -71,4 +73,4 @@ for promo in promos:
 # Gets publish date of episode
 pubdates = page_soup.findAll("p", {"class":"pubdate"})
 pubdates[0].small.text
-# TODO: format date so that it's mm-dd-yyyy and not '\nMay 2nd, 2017\n·\n67\nminutes'
+# TODO: format date so that it's mm-dd-yyyy and 
