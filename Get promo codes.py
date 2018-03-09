@@ -26,6 +26,7 @@ page_soup = soup(page_html, "html.parser")
 # Grabs both active and retired shows
 podcasts = page_soup.findAll("h3", {"class":"broadcast__name"})
 numOfPodcasts = len(podcasts)
+podcastURL = []
 # podcasts[1].a.text # 'Analog(ue)'
 # podcasts[1].a["href"] # '\analogue'
 
@@ -37,6 +38,9 @@ for podcast in podcasts:
 		podcastText = podcast.a.text
 	except TypeError: # This was being thrown by Master Feed since there's no URL to show
 		pass
+
+
+
 
 # TODO:
 # - Filter out RETIRED shows from ACTIVE one
