@@ -32,10 +32,13 @@ podcastURL = []
 
 # https://docs.python.org/3/tutorial/errors.html
 # Make dictionary of all the podcast names, partial URLs, and full URLs
+podcastURL = []
+podcastText = []
+
 for podcast in podcasts:
 	try:
-		podcastURL = podcast.a["href"]
-		podcastText = podcast.a.text
+		podcastURL.append(podcast.a["href"])
+		podcastText.append(podcast.a.text)
 	except TypeError: # This was being thrown by Master Feed since there's no URL to show
 		pass
 
@@ -43,17 +46,17 @@ for podcast in podcasts:
 
 
 # TODO:
-# - Filter out RETIRED shows from ACTIVE one
-# - Make full show URL
-# - Get last 5 episodes
+# - Filter out RETIRED shows from ACTIVE ones
+# - Make full show/episode URL
 # - Iterate through each url with code below and put promos in list
 # - Filter duplicate promos out removing the oldest codes first
 
 # --------------- Episode page ---------------
-my_url = 'https://www.relay.fm/connected/140'
+# TODO: Iterate through 5 most recent shows; compare with today's date and only grab stuff in the past 3 months?
+episode_url = 'https://www.relay.fm/connected/202'
 
 # Opens the connection, grabs the page
-uClient = uOpener.open(my_url) 
+uClient = uOpener.open(episode_url) 
 page_html = uClient.read()
 
 # Closes connection
@@ -64,8 +67,8 @@ page_soup = soup(page_html, "html.parser")
 
 # Grabs all (1) promo div elements with class of "sp-area"
 sp_areas = page_soup.findAll("div", {"class":"sp-area"}) # This is an array
-sp_areas[0].ul.li.a["href"] # 'http://casper.com/connected'
-sp_areas[0].ul.li.a.text # 'Casper'
+sp_areas[0].ul.li.a["href"] # 'https://smilesoftware.com/'
+sp_areas[0].ul.li.a.text # 'TextExpander'
 
 promos = sp_areas[0].findAll("li") # This is an array
 
@@ -76,5 +79,7 @@ for promo in promos:
 
 # Gets publish date of episode
 pubdates = page_soup.findAll("p", {"class":"pubdate"})
-pubdates[0].small.text
+pubdate = pubdates[0].small.text.split('·')
+print(pubdate[0].strip('\n'))
+
 # TODO: format date so that it's mm-dd-yyyy and 
