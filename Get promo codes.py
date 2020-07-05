@@ -15,66 +15,77 @@ class AppURLopener(urllib.request.FancyURLopener):
 
 uOpener = AppURLopener()
 root_url = "https://www.relay.fm"
-# --------------- List of podcasts ---------------
-showlist_url = "https://www.relay.fm/shows"
+ShowCatalog = []
 
-# Opens the connection, grabs the page
-uClient = uOpener.open(showlist_url)
-showlist_html = uClient.read()
+# --------------- List of podcasts/shows ---------------
+def GetShows():
+    """Returns a list of dictionaries with show titles and URLs"""
+    showlist_url = root_url + "/shows"
 
-# Closes connection
-uClient.close()
+    # Opens the connection, grabs the page
+    uClient = uOpener.open(showlist_url)
+    showlist_html = uClient.read()
 
-# HTML parsing
-showlist_soup = soup(showlist_html, "html.parser")
+    # Closes connection
+    uClient.close()
 
-# Grabs both active and retired shows
-podcasts = showlist_soup.findAll("h3", {"class": "broadcast__name"})
-numOfPodcasts = len(podcasts)
-podcastURL = []
-# podcasts[1].a.text # 'Analog(ue)'
-# podcasts[1].a["href"] # '/analogue'
-# https://docs.python.org/3/tutorial/errors.html
-# Make dictionary of all the podcast names, partial URLs, and full URLs
-podcastURL = []
-podcastText = []
+    # HTML parsing
+    showlist_soup = soup(showlist_html, "html.parser")
 
-for podcast in podcasts:
-    try:
-        podcastURL.append(podcast.a["href"])
-        podcastText.append(podcast.a.text)
-    except TypeError:  # This was being thrown by Master Feed since there's no URL to show
-        pass
+    # Grabs both active and retired shows
+    shows = showlist_soup.findAll("h3", {"class": "broadcast__name"})
+    # https://docs.python.org/3/tutorial/errors.html
+    # Make dictionary of all the podcast names, partial URLs, and full URLs
 
-print("There are " + str(len(podcastURL)) + " podcasts.")
-# --------------- Get five most recent episodes ---------------
-show_url = "https://www.relay.fm/connected"
+    for show in shows:
+        try:
+            Dictionary = {}
+            
+            if show.a:
+                Dictionary['title'] = show.a.text
+                Dictionary['url'] = show.a["href"]
+                ShowCatalog.append(Dictionary)
+        except TypeError:  # This was being thrown by Master Feed since there's no URL to show
+            pass
+        except AttributeError:
+            pass
 
-# Opens the connection, grabs the page
-uClient = uOpener.open(show_url)
-show_html = uClient.read()
+    return ShowCatalog
 
-# Closes connection
-uClient.close()
+#print("There are " + str(len(podcastURL)) + " shows.")
+# --------------- Get most recent episodes ---------------
+def GetEpisodeURLs(ShowURL):
+    """Input the URL of the show.
+    Example: '/ungeniused'
+    
+    Returns the URLs for the most recent episodes in a list.
+    Example: ['/108', '/107', ..., '/99'] """
+    show_url = root_url + ShowURL
 
-# HTML parsing
-show_soup = soup(show_html, "html.parser")
-episode_wrap = show_soup.findAll("div", {"class": "episode-wrap animated"})
+    # Opens the connection, grabs the page
+    uClient = uOpener.open(show_url)
+    show_html = uClient.read()
+    uClient.close() # Closes connection
 
-episode_num = []
-episode_title = []
+    # HTML parsing
+    show_soup = soup(show_html, "html.parser")
+    episode_wrap = show_soup.findAll("div", {"class": "episode-wrap animated"})
 
-for episode in episode_wrap[:5]:
-    episodes = episode.h3.a.text
-    episodes = episodes.split(":")
-    episode_num.append(episodes[0].strip("#"))
-    episode_title.append(episodes[1].strip())
+    episode_num = []
+    episode_title = []
 
-for x in range(len(episode_num)):
-    print("Episode " + episode_num[x] + " is titled '" + episode_title[x] + "'")
+    for episode in episode_wrap[:10]:  # Will have to load the next page if we want to get more episodes
+        ShowCatalog['episodes']
+        episodes = episode.h3.a.text
+        episodes = episodes.split(":")
+        episode_num.append(episodes[0].strip("#"))
+        episode_title.append(episodes[1].strip())
+
+    for x in range(len(episode_num)):
+        print("Episode " + episode_num[x] + " is titled '" + episode_title[x] + "'")
 
 # --------------- Episode page ---------------
-# TODO: Iterate through 5 most recent shows; compare with today's date and only grab stuff in the past 3 months?
+# TODO: Iterate through 5 most recent episodes; compare with today's date and only grab stuff in the past 3 months?
 episode_url = "https://www.relay.fm/connected/202"
 
 # Opens the connection, grabs the page
