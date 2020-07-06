@@ -54,35 +54,34 @@ def GetShows():
 
 #print("There are " + str(len(podcastURL)) + " shows.")
 # --------------- Get most recent episodes ---------------
-def GetEpisodeURLs(ShowURL):
+def GetEpisodeURLs(ShowCatalog):
     """Input the URL of the show.
     Example: '/ungeniused'
     
     Returns the URLs for the most recent episodes in a list.
     Example: ['/108', '/107', ..., '/99'] """
-    show_url = root_url + ShowURL
+    for Show in ShowCatalog:
+        show_url = root_url + Show['url'] #ShowURL
 
-    # Opens the connection, grabs the page
-    uClient = uOpener.open(show_url)
-    show_html = uClient.read()
-    uClient.close() # Closes connection
+        # Opens the connection, grabs the page
+        uClient = uOpener.open(show_url)
+        show_html = uClient.read()
+        uClient.close() # Closes connection
 
-    # HTML parsing
-    show_soup = soup(show_html, "html.parser")
-    episode_wrap = show_soup.findAll("div", {"class": "episode-wrap animated"})
+        # HTML parsing
+        show_soup = soup(show_html, "html.parser")
+        episode_wrap = show_soup.findAll("div", {"class": "episode-wrap animated"})
 
-    episode_num = []
-    episode_title = []
-
-    for episode in episode_wrap[:10]:  # Will have to load the next page if we want to get more episodes
-        ShowCatalog['episodes']
-        episodes = episode.h3.a.text
-        episodes = episodes.split(":")
-        episode_num.append(episodes[0].strip("#"))
-        episode_title.append(episodes[1].strip())
-
-    for x in range(len(episode_num)):
-        print("Episode " + episode_num[x] + " is titled '" + episode_title[x] + "'")
+        Show['episodes'] = []
+        for episode in episode_wrap[:10]:  # Will have to load the next page if we want to get more episodes
+            Dictionary = {}
+            episode_line = episode.h3.a.text
+            episode_info = episode_line.split(":")
+            Dictionary['number'] = episode_info[0].strip("#")
+            Dictionary['title'] = episode_info[1].strip()
+            Show['episodes'].append(Dictionary)
+        
+    return ShowCatalog
 
 # --------------- Episode page ---------------
 # TODO: Iterate through 5 most recent episodes; compare with today's date and only grab stuff in the past 3 months?
