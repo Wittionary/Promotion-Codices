@@ -89,6 +89,7 @@ def GetPromoCodes(ShowCatalog):
     for Show in ShowCatalog:
         show_url = root_url + Show['url']  #ShowURL
 
+
         for Episode in Show['episodes']:
             episode_url = show_url + '/' + Episode['number']
 
@@ -104,28 +105,37 @@ def GetPromoCodes(ShowCatalog):
 
             # Grabs all (1) promo div elements with class of "sp-area"
             sp_areas = episode_soup.findAll("div", {"class": "sp-area"})  # This is an array
-            sp_areas[0].ul.li.a["href"]  # 'https://smilesoftware.com/'
-            sp_areas[0].ul.li.a.text  # 'TextExpander'
+            #sp_areas[0].ul.li.a["href"]  # 'https://smilesoftware.com/'
+            #sp_areas[0].ul.li.a.text  # 'TextExpander'
 
-            promos = sp_areas[0].findAll("li")  # This is an array
-
-            Episode['promos'] = []
-            for promo in promos:
-                information = promo.text
-                information = information.split(":",1)
-                Dictionary = {}
-                Dictionary['sponsor'] = information[0]
-                Dictionary['url'] = promo.a["href"]
-                Dictionary['description'] = information[1]
-                Episode['promos'].append(Dictionary)
-            
+            if sp_areas == []:
+                # If there are no promos for this episode, then we don't need to add info about them
+                print("No promos for Episode " + Episode['number'])
+            else:
+                promos = sp_areas[0].findAll("li")  # This is an array
+                Episode['promos'] = []
+                for promo in promos:
+                    information = promo.text
+                    information = information.split(":",1)
+                    Dictionary = {}
+                    Dictionary['sponsor'] = information[0].strip()
+                    Dictionary['url'] = promo.a["href"]
+                    Dictionary['description'] = information[1].strip()
+                    Episode['promos'].append(Dictionary)
+                    
+            #print(Episode)
+                
     return ShowCatalog
 
-
-            # Gets publish date of episode
-            #pubdates = episode_soup.find("p", {"class": "pubdate"})
-            #pubdate = pubdates.small.text.split("·")
-            #pubdate = pubdate[0].strip("\n")
-            #print(pubdate)
+# Gets publish date of episode
+#pubdates = episode_soup.find("p", {"class": "pubdate"})
+#pubdate = pubdates.small.text.split("·")
+#pubdate = pubdate[0].strip("\n")
+#print(pubdate)
 
 # TODO: format date so that it's mm-dd-yyyy and
+
+# App starts here
+GetShows()
+GetEpisodeURLs(ShowCatalog)
+GetPromoCodes(ShowCatalog)
