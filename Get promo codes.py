@@ -55,11 +55,11 @@ def GetShows():
 #print("There are " + str(len(podcastURL)) + " shows.")
 # --------------- Get most recent episodes ---------------
 def GetEpisodeURLs(ShowCatalog):
-    """Input the URL of the show.
-    Example: '/ungeniused'
+    """Input the ShowCatalog object.
+    Example: TODO
     
-    Returns the URLs for the most recent episodes in a list.
-    Example: ['/108', '/107', ..., '/99'] """
+    Adds the URLs for the most recent episodes in a list to the ShowCatalog object.
+    Example: TODO """
     for Show in ShowCatalog:
         show_url = root_url + Show['url'] #ShowURL
 
@@ -84,35 +84,48 @@ def GetEpisodeURLs(ShowCatalog):
     return ShowCatalog
 
 # --------------- Episode page ---------------
-# TODO: Iterate through 5 most recent episodes; compare with today's date and only grab stuff in the past 3 months?
-episode_url = "https://www.relay.fm/connected/202"
+def GetPromoCodes(ShowCatalog):
+    """doc strings?"""
+    for Show in ShowCatalog:
+        show_url = root_url + Show['url']  #ShowURL
 
-# Opens the connection, grabs the page
-uClient = uOpener.open(episode_url)
-episode_html = uClient.read()
+        for Episode in Show['episodes']:
+            episode_url = show_url + '/' + Episode['number']
 
-# Closes connection
-uClient.close()
+            # Opens the connection, grabs the page
+            uClient = uOpener.open(episode_url)
+            episode_html = uClient.read()
 
-# HTML parsing
-episode_soup = soup(episode_html, "html.parser")
+            # Closes connection
+            uClient.close()
 
-# Grabs all (1) promo div elements with class of "sp-area"
-sp_areas = episode_soup.findAll("div", {"class": "sp-area"})  # This is an array
-sp_areas[0].ul.li.a["href"]  # 'https://smilesoftware.com/'
-sp_areas[0].ul.li.a.text  # 'TextExpander'
+            # HTML parsing
+            episode_soup = soup(episode_html, "html.parser")
 
-promos = sp_areas[0].findAll("li")  # This is an array
+            # Grabs all (1) promo div elements with class of "sp-area"
+            sp_areas = episode_soup.findAll("div", {"class": "sp-area"})  # This is an array
+            sp_areas[0].ul.li.a["href"]  # 'https://smilesoftware.com/'
+            sp_areas[0].ul.li.a.text  # 'TextExpander'
 
-# https://www.tutorialspoint.com/python/python_for_loop.htm
-for promo in promos:
-    promo.a["href"]
-    promo.text
+            promos = sp_areas[0].findAll("li")  # This is an array
 
-# Gets publish date of episode
-pubdates = episode_soup.find("p", {"class": "pubdate"})
-pubdate = pubdates.small.text.split("·")
-pubdate = pubdate[0].strip("\n")
-print(pubdate)
+            Episode['promos'] = []
+            for promo in promos:
+                information = promo.text
+                information = information.split(":",1)
+                Dictionary = {}
+                Dictionary['sponsor'] = information[0]
+                Dictionary['url'] = promo.a["href"]
+                Dictionary['description'] = information[1]
+                Episode['promos'].append(Dictionary)
+            
+    return ShowCatalog
+
+
+            # Gets publish date of episode
+            #pubdates = episode_soup.find("p", {"class": "pubdate"})
+            #pubdate = pubdates.small.text.split("·")
+            #pubdate = pubdate[0].strip("\n")
+            #print(pubdate)
 
 # TODO: format date so that it's mm-dd-yyyy and
