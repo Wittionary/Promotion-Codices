@@ -3,6 +3,9 @@
 from urllib.request import urlopen as uRequest
 from bs4 import BeautifulSoup as soup
 import urllib.request
+import logging
+
+logging.basicConfig(level=logging.INFO)
 
 # TODO:
 # - Filter out RETIRED shows from ACTIVE ones
@@ -110,7 +113,7 @@ def GetPromoCodes(ShowCatalog):
 
             if sp_areas == []:
                 # If there are no promos for this episode, then we don't need to add info about them
-                print("No promos for Episode " + Episode['number'])
+                logging.info("No promos for " + Show['title'] + " #" + Episode['number'])
             else:
                 promos = sp_areas[0].findAll("li")  # This is an array
                 Episode['promos'] = []
@@ -136,6 +139,8 @@ def GetPromoCodes(ShowCatalog):
 # TODO: format date so that it's mm-dd-yyyy and
 
 # App starts here
-GetShows()
-GetEpisodeURLs(ShowCatalog)
-GetPromoCodes(ShowCatalog)
+database = GetShows()
+database = GetEpisodeURLs(database)
+database = GetPromoCodes(database)
+
+print(database)
