@@ -16,7 +16,7 @@ logging.basicConfig(level=logging.INFO)
 # - Filter duplicate promos out removing the oldest codes first
 
 # http://stackoverflow.com/questions/16627227/http-error-403-in-python-3-web-scraping
-class AppURLopener(urllib.request.FancyURLopener):
+class AppURLopener(urllib.request.urlopen): # FancyURLopener
     version = "Mozilla/5.0"
 
 
