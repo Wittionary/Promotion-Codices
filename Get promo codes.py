@@ -20,6 +20,9 @@ uOpener = AppURLopener()
 root_url = "https://www.relay.fm"
 ShowCatalog = []
 
+with open('fakecache.txt', 'w') as fakecache:
+    read_data = fakecache.read()
+
 # --------------- List of podcasts/shows ---------------
 def GetShows():
     """Returns a list of dictionaries with show titles and URLs"""
