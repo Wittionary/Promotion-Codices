@@ -4,6 +4,10 @@ from urllib.request import urlopen as uRequest
 from bs4 import BeautifulSoup as soup
 import urllib.request
 import logging
+from os import path
+from datetime import datetime, timedelta
+import time
+import json
 
 logging.basicConfig(level=logging.INFO)
 
@@ -19,9 +23,27 @@ class AppURLopener(urllib.request.FancyURLopener):
 uOpener = AppURLopener()
 root_url = "https://www.relay.fm"
 ShowCatalog = []
+FAKE_CACHE_FILEPATH = 'fakecache.txt'
+using_cache = False
 
-with open('fakecache.txt', 'w') as fakecache:
-    read_data = fakecache.read()
+# --------------- Ghetto caching ---------------
+if path.exists(FAKE_CACHE_FILEPATH):
+    # Check to see if it's been recently made (past 7 days) 
+    seven_days_ago = (datetime.today() - timedelta(days=7)).timestamp()
+    file_modified_time = path.getmtime(FAKE_CACHE_FILEPATH)
+    if seven_days_ago < file_modified_time:
+        # Fresh cache; use it
+        using_cache = True
+        fakecache = open(FAKE_CACHE_FILEPATH, 'r')
+        ShowCatalog = json.load(fakecache)
+    else:
+        # Don't use the file, make a new one
+        using_cache = False
+        fakecache = open(FAKE_CACHE_FILEPATH, 'w+')
+else:
+    # Make the file
+    using_cache = False
+    fakecache = open(FAKE_CACHE_FILEPATH, 'w+')
 
 # --------------- List of podcasts/shows ---------------
 def GetShows():
@@ -58,7 +80,6 @@ def GetShows():
 
     return ShowCatalog
 
-#print("There are " + str(len(podcastURL)) + " shows.")
 # --------------- Get most recent episodes ---------------
 def GetEpisodeURLs(ShowCatalog):
     """Input the ShowCatalog object.
@@ -139,11 +160,16 @@ def GetPromoCodes(ShowCatalog):
 #pubdate = pubdate[0].strip("\n")
 #print(pubdate)
 
-# TODO: format date so that it's mm-dd-yyyy and
-
 # App starts here
-database = GetShows()
-database = GetEpisodeURLs(database)
-database = GetPromoCodes(database)
+if using_cache:
+    # don't go get new info
+    database = ShowCatalog
+else:
+    database = GetShows()
+    database = GetEpisodeURLs(database)
+    database = GetPromoCodes(database)
+    json.dump(database, fakecache)
 
 print(database)
+if not fakecache.closed:
+    fakecache.close()
