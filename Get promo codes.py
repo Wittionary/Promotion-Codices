@@ -1,13 +1,10 @@
 # Following the tutorial at:
 # https://www.youtube.com/watch?v=XQgXKtPSzUI
-from urllib.request import urlopen as uRequest
+#from urllib.request import urlopen as uRequest
 from bs4 import BeautifulSoup as soup
-import urllib.request
-import logging
+import requests, logging, time, json
 from os import path
 from datetime import datetime, timedelta
-import time
-import json
 
 logging.basicConfig(level=logging.INFO)
 
@@ -15,12 +12,6 @@ logging.basicConfig(level=logging.INFO)
 # - Filter out RETIRED shows from ACTIVE ones
 # - Filter duplicate promos out removing the oldest codes first
 
-# http://stackoverflow.com/questions/16627227/http-error-403-in-python-3-web-scraping
-class AppURLopener(urllib.request.urlopen): # FancyURLopener
-    version = "Mozilla/5.0"
-
-
-uOpener = AppURLopener()
 root_url = "https://www.relay.fm"
 ShowCatalog = []
 FAKE_CACHE_FILEPATH = 'fakecache.txt'
@@ -51,19 +42,14 @@ def GetShows():
     showlist_url = root_url + "/shows"
 
     # Opens the connection, grabs the page
-    uClient = uOpener.open(showlist_url)
-    showlist_html = uClient.read()
-
-    # Closes connection
-    uClient.close()
+    response = requests.get(showlist_url)
+    showlist_html = response.text
 
     # HTML parsing
     showlist_soup = soup(showlist_html, "html.parser")
 
     # Grabs both active and retired shows
     shows = showlist_soup.findAll("h3", {"class": "broadcast__name"})
-    # https://docs.python.org/3/tutorial/errors.html
-    # Make dictionary of all the podcast names, partial URLs, and full URLs
 
     for show in shows:
         try:
@@ -91,9 +77,8 @@ def GetEpisodeURLs(ShowCatalog):
         show_url = root_url + Show['url'] #ShowURL
 
         # Opens the connection, grabs the page
-        uClient = uOpener.open(show_url)
-        show_html = uClient.read()
-        uClient.close() # Closes connection
+        response = requests.get(show_url)
+        show_html = response.text
 
         # HTML parsing
         show_soup = soup(show_html, "html.parser")
@@ -116,16 +101,12 @@ def GetPromoCodes(ShowCatalog):
     for Show in ShowCatalog:
         show_url = root_url + Show['url']  #ShowURL
 
-
         for Episode in Show['episodes']:
             episode_url = show_url + '/' + Episode['number']
 
             # Opens the connection, grabs the page
-            uClient = uOpener.open(episode_url)
-            episode_html = uClient.read()
-
-            # Closes connection
-            uClient.close()
+            response = requests.get(episode_url)
+            episode_html = response.text
 
             # HTML parsing
             episode_soup = soup(episode_html, "html.parser")
@@ -149,8 +130,6 @@ def GetPromoCodes(ShowCatalog):
                     Dictionary['url'] = promo.a["href"]
                     Dictionary['description'] = information[1].strip()
                     Episode['promos'].append(Dictionary)
-                    
-            #print(Episode)
                 
     return ShowCatalog
 
@@ -163,13 +142,14 @@ def GetPromoCodes(ShowCatalog):
 # App starts here
 if using_cache:
     # don't go get new info
+    logging.info("Using the cache")
     database = ShowCatalog
 else:
     database = GetShows()
     database = GetEpisodeURLs(database)
     database = GetPromoCodes(database)
+    logging.info("Writing database object to " + FAKE_CACHE_FILEPATH)
     json.dump(database, fakecache)
 
-print(database)
 if not fakecache.closed:
     fakecache.close()
