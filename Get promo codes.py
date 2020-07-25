@@ -11,12 +11,12 @@ logging.info("Logging started")
 # - Filter duplicate promos out removing the oldest codes first
 
 root_url = "https://www.relay.fm"
-logging.debug("root_url is: " + str(root_url))
+logging.debug(f"root_url is: {root_url}")
 ShowCatalog = []
 FAKE_CACHE_FILEPATH = 'fakecache.txt'
-logging.debug("FAKE_CACHE_FILEPATH is: " + str(root_url))
+logging.debug(f"FAKE_CACHE_FILEPATH is: {root_url}")
 using_cache = False
-logging.debug("using_cache initialized to: " + using_cache)
+logging.debug(f"using_cache initialized to: {using_cache}")
 
 # --------------- Ghetto caching ---------------
 logging.info("Check cache for data")
@@ -25,24 +25,24 @@ if path.exists(FAKE_CACHE_FILEPATH):
     seven_days_ago = (datetime.today() - timedelta(days=7)).timestamp()
     file_modified_time = path.getmtime(FAKE_CACHE_FILEPATH)
     if seven_days_ago < file_modified_time:
-        logging.debug("seven_days_ago (" + seven_days_ago + ") is less than file_modified_time (" + file_modified_time + ").")
+        logging.debug(f"seven_days_ago ({seven_days_ago}) is less than file_modified_time ({file_modified_time}).")
         # Fresh cache; use it
-        logging.info("Using the cached data at: " + FAKE_CACHE_FILEPATH)
+        logging.info(f"Using the cached data at: {FAKE_CACHE_FILEPATH}")
         using_cache = True
-        logging.debug("using_cache is: " + str(using_cache))
+        logging.debug(f"using_cache is: {using_cache}")
         fakecache = open(FAKE_CACHE_FILEPATH, 'r')
         ShowCatalog = json.load(fakecache)
     else:
         # Don't use the file, make a new one
-        logging.info("Cached data is older than seven days. Make a new cache at: " + FAKE_CACHE_FILEPATH)
+        logging.info(f"Cached data is older than seven days. Make a new cache at: {FAKE_CACHE_FILEPATH}")
         using_cache = False
-        logging.debug("using_cache is: " + str(using_cache))
+        logging.debug(f"using_cache is: {using_cache}")
         fakecache = open(FAKE_CACHE_FILEPATH, 'w+')
 else:
     # Make the file
-    logging.info("No cache file found. Make a new cache at: " + FAKE_CACHE_FILEPATH)
+    logging.info(f"No cache file found. Make a new cache at: {FAKE_CACHE_FILEPATH}")
     using_cache = False
-    logging.debug("using_cache is: " + str(using_cache))
+    logging.debug(f"using_cache is: {using_cache}")
     fakecache = open(FAKE_CACHE_FILEPATH, 'w+')
 
 # --------------- List of podcasts/shows ---------------
@@ -50,7 +50,7 @@ def GetShows():
     """Returns a list of dictionaries with show titles and URLs"""
     logging.debug("Starting GetShows()")
     showlist_url = root_url + "/shows"
-    logging.info("Showlist URL is " + str(showlist_url))
+    logging.info(f"Showlist URL is {showlist_url}")
 
     # Opens the connection, grabs the page
     response = requests.get(showlist_url)
@@ -63,7 +63,7 @@ def GetShows():
     shows = showlist_soup.findAll("h3", {"class": "broadcast__name"})
 
     for show in shows:
-        logging.debug("Processing show: " + str(show))
+        logging.debug(f"Processing show: {show}")
         try:
             Dictionary = {}
             
@@ -72,10 +72,10 @@ def GetShows():
                 Dictionary['url'] = show.a["href"]
                 ShowCatalog.append(Dictionary)
         except TypeError:  # This was being thrown by Master Feed since there's no URL to show
-            logging.error("TypeError occured on show: " + str(show))
+            logging.error(f"TypeError occured on show: {show}")
             pass
         except AttributeError:
-            logging.error("AttributeError occured on show: " + str(show))
+            logging.error(f"AttributeError occured on show: {show}")
             pass
 
     logging.debug("Returning ShowCatalog")
@@ -92,7 +92,7 @@ def GetEpisodeURLs(ShowCatalog):
 
     for Show in ShowCatalog:
         show_url = root_url + Show['url']
-        logging.info("Show URL is " + str(show_url))
+        logging.info(f"Show URL is {show_url}")
 
         # Opens the connection, grabs the page
         response = requests.get(show_url)
@@ -109,7 +109,7 @@ def GetEpisodeURLs(ShowCatalog):
             episode_info = episode_line.split(":")
             Dictionary['number'] = episode_info[0].strip("#")
             Dictionary['title'] = episode_info[1].strip()
-            logging.debug("Appending this to Show['episodes']: " + str(Dictionary))
+            logging.debug(f"Appending this to Show['episodes']: {Dictionary}")
             Show['episodes'].append(Dictionary)
     
     logging.debug("Returning ShowCatalog")
@@ -122,12 +122,11 @@ def GetPromoCodes(ShowCatalog):
 
     for Show in ShowCatalog:
         show_url = root_url + Show['url']
-        logging.info("Show URL is " + str(show_url))
+        logging.info(f"Show URL is {show_url}")
 
         for Episode in Show['episodes']:
             episode_url = show_url + '/' + Episode['number']
-            #logging.debug("episode_url is type " + str(type(episode_url)))
-            #logging.info("Episode URL is TESTING") # + episode_url
+            logging.debug(f"episode_url is type {episode_url}")
 
             # Opens the connection, grabs the page
             response = requests.get(episode_url)
@@ -143,10 +142,10 @@ def GetPromoCodes(ShowCatalog):
 
             if sp_areas == []:
                 # If there are no promos for this episode, then we don't need to add info about them
-                logging.info("No promos for " + Show['title'] + " #" + Episode['number'])
+                logging.info(f"No promos for {Show['title']} episode # {Episode['number']}")
             else:
                 promos = sp_areas[0].findAll("li")  # This is an array
-                logging.info("There are " + len(promos) + " promos")
+                logging.info(f"There are {len(promos)} promos")
                 Episode['promos'] = []
                 for promo in promos:
                     information = promo.text
@@ -155,7 +154,7 @@ def GetPromoCodes(ShowCatalog):
                     Dictionary['sponsor'] = information[0].strip()
                     Dictionary['url'] = promo.a["href"]
                     Dictionary['description'] = information[1].strip()
-                    logging.debug("Appending this to Episode['promos']: " + str(Dictionary))
+                    logging.debug(f"Appending this to Episode['promos']: {Dictionary}")
                     Episode['promos'].append(Dictionary)
     
     logging.debug("Returning ShowCatalog")
@@ -176,7 +175,7 @@ else:
     database = GetShows()
     database = GetEpisodeURLs(database)
     database = GetPromoCodes(database)
-    logging.info("Writing database object to " + FAKE_CACHE_FILEPATH)
+    logging.info(f"Writing database object to {FAKE_CACHE_FILEPATH}")
     json.dump(database, fakecache)
 
 if not fakecache.closed:
