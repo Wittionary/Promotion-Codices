@@ -1,45 +1,56 @@
-# Following the tutorial at:
-# https://www.youtube.com/watch?v=XQgXKtPSzUI
-#from urllib.request import urlopen as uRequest
 from bs4 import BeautifulSoup as soup
 import requests, logging, time, json
 from os import path
 from datetime import datetime, timedelta
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.DEBUG)
+logging.info("Logging started")
 
 # TODO:
 # - Filter out RETIRED shows from ACTIVE ones
 # - Filter duplicate promos out removing the oldest codes first
 
 root_url = "https://www.relay.fm"
+logging.debug(f"root_url is: {root_url}")
 ShowCatalog = []
 FAKE_CACHE_FILEPATH = 'fakecache.txt'
+logging.debug(f"FAKE_CACHE_FILEPATH is: {root_url}")
 using_cache = False
+logging.debug(f"using_cache initialized to: {using_cache}")
 
 # --------------- Ghetto caching ---------------
+logging.info("Check cache for data")
 if path.exists(FAKE_CACHE_FILEPATH):
     # Check to see if it's been recently made (past 7 days) 
     seven_days_ago = (datetime.today() - timedelta(days=7)).timestamp()
     file_modified_time = path.getmtime(FAKE_CACHE_FILEPATH)
     if seven_days_ago < file_modified_time:
+        logging.debug(f"seven_days_ago ({seven_days_ago}) is less than file_modified_time ({file_modified_time}).")
         # Fresh cache; use it
+        logging.info(f"Using the cached data at: {FAKE_CACHE_FILEPATH}")
         using_cache = True
+        logging.debug(f"using_cache is: {using_cache}")
         fakecache = open(FAKE_CACHE_FILEPATH, 'r')
         ShowCatalog = json.load(fakecache)
     else:
         # Don't use the file, make a new one
+        logging.info(f"Cached data is older than seven days. Make a new cache at: {FAKE_CACHE_FILEPATH}")
         using_cache = False
+        logging.debug(f"using_cache is: {using_cache}")
         fakecache = open(FAKE_CACHE_FILEPATH, 'w+')
 else:
     # Make the file
+    logging.info(f"No cache file found. Make a new cache at: {FAKE_CACHE_FILEPATH}")
     using_cache = False
+    logging.debug(f"using_cache is: {using_cache}")
     fakecache = open(FAKE_CACHE_FILEPATH, 'w+')
 
 # --------------- List of podcasts/shows ---------------
 def GetShows():
     """Returns a list of dictionaries with show titles and URLs"""
+    logging.debug("Starting GetShows()")
     showlist_url = root_url + "/shows"
+    logging.info(f"Showlist URL is {showlist_url}")
 
     # Opens the connection, grabs the page
     response = requests.get(showlist_url)
@@ -52,6 +63,7 @@ def GetShows():
     shows = showlist_soup.findAll("h3", {"class": "broadcast__name"})
 
     for show in shows:
+        logging.debug(f"Processing show: {show}")
         try:
             Dictionary = {}
             
@@ -60,10 +72,13 @@ def GetShows():
                 Dictionary['url'] = show.a["href"]
                 ShowCatalog.append(Dictionary)
         except TypeError:  # This was being thrown by Master Feed since there's no URL to show
+            logging.error(f"TypeError occured on show: {show}")
             pass
         except AttributeError:
+            logging.error(f"AttributeError occured on show: {show}")
             pass
 
+    logging.debug("Returning ShowCatalog")
     return ShowCatalog
 
 # --------------- Get most recent episodes ---------------
@@ -73,8 +88,11 @@ def GetEpisodeURLs(ShowCatalog):
     
     Adds the URLs for the most recent episodes in a list to the ShowCatalog object.
     Example: TODO """
+    logging.debug("Starting GetEpisodeURLs()")
+
     for Show in ShowCatalog:
-        show_url = root_url + Show['url'] #ShowURL
+        show_url = root_url + Show['url']
+        logging.info(f"Show URL is {show_url}")
 
         # Opens the connection, grabs the page
         response = requests.get(show_url)
@@ -91,18 +109,24 @@ def GetEpisodeURLs(ShowCatalog):
             episode_info = episode_line.split(":")
             Dictionary['number'] = episode_info[0].strip("#")
             Dictionary['title'] = episode_info[1].strip()
+            logging.debug(f"Appending this to Show['episodes']: {Dictionary}")
             Show['episodes'].append(Dictionary)
-        
+    
+    logging.debug("Returning ShowCatalog")
     return ShowCatalog
 
 # --------------- Episode page ---------------
 def GetPromoCodes(ShowCatalog):
     """doc strings?"""
+    logging.debug("Starting GetPromoCodes()")
+
     for Show in ShowCatalog:
-        show_url = root_url + Show['url']  #ShowURL
+        show_url = root_url + Show['url']
+        logging.info(f"Show URL is {show_url}")
 
         for Episode in Show['episodes']:
             episode_url = show_url + '/' + Episode['number']
+            logging.debug(f"episode_url is type {episode_url}")
 
             # Opens the connection, grabs the page
             response = requests.get(episode_url)
@@ -118,9 +142,10 @@ def GetPromoCodes(ShowCatalog):
 
             if sp_areas == []:
                 # If there are no promos for this episode, then we don't need to add info about them
-                logging.info("No promos for " + Show['title'] + " #" + Episode['number'])
+                logging.info(f"No promos for {Show['title']} episode # {Episode['number']}")
             else:
                 promos = sp_areas[0].findAll("li")  # This is an array
+                logging.info(f"There are {len(promos)} promos")
                 Episode['promos'] = []
                 for promo in promos:
                     information = promo.text
@@ -129,8 +154,10 @@ def GetPromoCodes(ShowCatalog):
                     Dictionary['sponsor'] = information[0].strip()
                     Dictionary['url'] = promo.a["href"]
                     Dictionary['description'] = information[1].strip()
+                    logging.debug(f"Appending this to Episode['promos']: {Dictionary}")
                     Episode['promos'].append(Dictionary)
-                
+    
+    logging.debug("Returning ShowCatalog")
     return ShowCatalog
 
 # Gets publish date of episode
@@ -148,8 +175,12 @@ else:
     database = GetShows()
     database = GetEpisodeURLs(database)
     database = GetPromoCodes(database)
-    logging.info("Writing database object to " + FAKE_CACHE_FILEPATH)
+    logging.info(f"Writing database object to {FAKE_CACHE_FILEPATH}")
     json.dump(database, fakecache)
 
 if not fakecache.closed:
+    logging.info("Closing fakecache object")
     fakecache.close()
+
+
+logging.debug("End of program")
