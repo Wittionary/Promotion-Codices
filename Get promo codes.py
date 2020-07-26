@@ -1,9 +1,9 @@
 from bs4 import BeautifulSoup as soup
 import requests, logging, time, json
-from os import path
+from os import path, stat, remove
 from datetime import datetime, timedelta
 
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 logging.info("Logging started")
 
 # TODO:
@@ -44,6 +44,18 @@ else:
     using_cache = False
     logging.debug(f"using_cache is: {using_cache}")
     fakecache = open(FAKE_CACHE_FILEPATH, 'w+')
+
+def IsCacheEmpty(CacheFilePath):
+    logging.debug("Starting IsCacheEmpty()")
+    logging.info(f"Checking if {CacheFilePath} contains no/little data")
+    filesize = stat(CacheFilePath).st_size
+    if filesize < 3:
+        logging.debug("IsCacheEmpty() returns: True")
+        return True
+    else:
+        logging.debug("IsCacheEmpty() returns: False")
+        return False
+
 
 # --------------- List of podcasts/shows ---------------
 def GetShows():
@@ -182,5 +194,8 @@ if not fakecache.closed:
     logging.info("Closing fakecache object")
     fakecache.close()
 
+if IsCacheEmpty(FAKE_CACHE_FILEPATH):
+    logging.info("Deleting empty fakecache file")
+    remove(FAKE_CACHE_FILEPATH)
 
 logging.debug("End of program")
