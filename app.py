@@ -1,9 +1,8 @@
-from bs4 import BeautifulSoup as soup
-import requests, logging, time, json
 from os import path, stat, remove
 from datetime import datetime, timedelta
+import logging, json
 
-import promo_codes
+from promo_codes import PodcastPlatform
 
 logging.basicConfig(level=logging.INFO)
 logging.info("Logging started")
@@ -13,8 +12,7 @@ logging.info("Logging started")
 # - Filter duplicate promos out removing the oldest codes first
 
 relay_fm = PodcastPlatform("https://www.relay.fm")
-logging.debug(f"root_url is: {root_url}")
-ShowCatalog = []
+logging.debug(f"root_url is: {relay_fm.root_url}")
 FAKE_CACHE_FILEPATH = 'fakecache.txt'
 logging.debug(f"FAKE_CACHE_FILEPATH is: {FAKE_CACHE_FILEPATH}")
 using_cache = False
@@ -72,13 +70,13 @@ def IsCacheEmpty(CacheFilePath):
 if using_cache:
     # don't go get new info
     logging.info("Using the cache")
-    database = ShowCatalog
+    database = relay_fm.show_catalog
 else:
-    database = GetShows()
-    database = GetEpisodeURLs(database)
-    database = GetPromoCodes(database)
+    relay_fm.get_shows()
+    relay_fm.get_episode_urls()
+    relay_fm.get_promo_codes()
     logging.info(f"Writing database object to {FAKE_CACHE_FILEPATH}")
-    json.dump(database, fakecache)
+    json.dump(relay_fm.show_catalog, fakecache)
 
 if not fakecache.closed:
     logging.info("Closing fakecache object")

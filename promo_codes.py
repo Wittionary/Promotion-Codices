@@ -1,4 +1,6 @@
 """A class representing a podcast CMS/platform/directory."""
+import logging, requests, time, json
+from bs4 import BeautifulSoup as soup
 
 class PodcastPlatform:
     """A podcast platform/CMS/directory."""
@@ -8,42 +10,42 @@ class PodcastPlatform:
         self.show_catalog = []
 
     def get_shows(self):
-    """Returns a list of dictionaries with show titles and URLs"""
-    logging.debug("Starting get_shows()")
-    self.showlist_url = self.root_url + "/shows"
-    logging.info(f"Showlist URL is {self.showlist_url}")
+        """Returns a list of dictionaries with show titles and URLs"""
+        logging.debug("Starting get_shows()")
+        self.showlist_url = self.root_url + "/shows"
+        logging.info(f"Showlist URL is {self.showlist_url}")
 
-    # Opens the connection, grabs the page
-    response = requests.get(self.showlist_url)
-    showlist_html = response.text
+        # Opens the connection, grabs the page
+        response = requests.get(self.showlist_url)
+        showlist_html = response.text
 
-    # HTML parsing
-    showlist_soup = soup(showlist_html, "html.parser")
+        # HTML parsing
+        showlist_soup = soup(showlist_html, "html.parser")
 
-    # Grabs both active and retired shows
-    shows = showlist_soup.findAll("h3", {"class": "broadcast__name"})
+        # Grabs both active and retired shows
+        shows = showlist_soup.findAll("h3", {"class": "broadcast__name"})
 
-    for show in shows:
-        logging.debug(f"Processing show: {show}")
-        try:
-            Dictionary = {}
-            
-            if show.a:
-                Dictionary['title'] = show.a.text
-                Dictionary['url'] = show.a["href"]
-                show_catalog.append(Dictionary)
-        except TypeError:  # This was being thrown by Master Feed since there's no URL to show
-            logging.error(f"TypeError occured on show: {show}")
-            pass
-        except AttributeError:
-            logging.error(f"AttributeError occured on show: {show}")
-            pass
+        for show in shows:
+            logging.debug(f"Processing show: {show}")
+            try:
+                Dictionary = {}
+                
+                if show.a:
+                    Dictionary['title'] = show.a.text
+                    Dictionary['url'] = show.a["href"]
+                    self.show_catalog.append(Dictionary)
+            except TypeError:  # This was being thrown by Master Feed since there's no URL to show
+                logging.error(f"TypeError occured on show: {show}")
+                pass
+            except AttributeError:
+                logging.error(f"AttributeError occured on show: {show}")
+                pass
 
-    logging.debug("Returning show_catalog")
-    return show_catalog
+        logging.debug("Returning show_catalog")
+        return self.show_catalog
 
     # --------------- Get most recent episodes ---------------
-    def get_episode_urls(self, show_catalog):
+    def get_episode_urls(self):
         """Input the show_catalog object.
         Example: TODO
         
@@ -51,8 +53,8 @@ class PodcastPlatform:
         Example: TODO """
         logging.debug("Starting get_episode_urls()")
 
-        for show in show_catalog:
-            show_url = root_url + show['url']
+        for show in self.show_catalog:
+            show_url = self.root_url + show['url']
             logging.info(f"Show URL is {show_url}")
 
             # Opens the connection, grabs the page
@@ -74,15 +76,15 @@ class PodcastPlatform:
                 show['episodes'].append(Dictionary)
         
         logging.debug("Returning show_catalog")
-        return show_catalog
+        return self.show_catalog
 
     # --------------- Episode page ---------------
-    def get_promo_codes(self, show_catalog):
+    def get_promo_codes(self):
         """doc strings?"""
         logging.debug("Starting get_promo_codes()")
 
-        for show in show_catalog:
-            show_url = root_url + show['url']
+        for show in self.show_catalog:
+            show_url = self.root_url + show['url']
             logging.info(f"Show URL is {show_url}")
 
             for episode in show['episodes']:
@@ -119,5 +121,5 @@ class PodcastPlatform:
                         episode['promos'].append(Dictionary)
         
         logging.debug("Returning show_catalog")
-        return show_catalog
+        return self.show_catalog
     
