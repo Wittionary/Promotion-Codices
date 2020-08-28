@@ -1,3 +1,4 @@
 fakecache*.txt
+fakecache*.json
 __pycache__*
 __pycache__/*

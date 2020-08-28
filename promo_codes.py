@@ -1,5 +1,7 @@
 """A class representing a podcast CMS/platform/directory."""
 import logging, requests, time, json
+from os import path, stat
+from datetime import datetime, timedelta
 from bs4 import BeautifulSoup as soup
 
 class PodcastPlatform:
@@ -7,6 +9,7 @@ class PodcastPlatform:
 
     def __init__(self, root_url):
         self.root_url = root_url
+        logging.debug(f"PodcastPlatform.root_url is: {self.root_url}")
         self.show_catalog = []
 
     def get_shows(self):
@@ -122,4 +125,61 @@ class PodcastPlatform:
         
         logging.debug("Returning show_catalog")
         return self.show_catalog
-    
+
+class FakeCache:
+    """Not quite a legit caching object, but it works."""
+
+    def __init__(self, filepath="fakecache.json"):
+        """Initialize the FakeCache object."""
+        self.filepath = filepath
+        logging.debug(f"FakeCache.filepath is: {self.filepath}")
+        self.using_cache = False
+        logging.debug(f"FakeCache.using_cache initialized to: {self.using_cache}")
+
+    def validate_cache(self):
+        """Check the cache to see if it has stale or fresh data."""
+        logging.info("Check cache for data")
+        if path.exists(self.filepath):
+            # Check to see if it's been recently made (past 7 days) 
+            seven_days_ago = (datetime.today() - timedelta(days=7)).timestamp()
+            file_modified_time = path.getmtime(self.filepath)
+            if seven_days_ago < file_modified_time:
+                logging.debug(f"seven_days_ago ({seven_days_ago}) is less than file_modified_time ({file_modified_time}).")
+                # Fresh cache; use it
+                logging.info(f"Using the cached data at: {self.filepath}")
+                self.using_cache = True
+                logging.debug(f"FakeCache.using_cache is: {self.using_cache}")
+                # now load_cache()
+            else:
+                # Don't use the file, make a new one
+                logging.info(f"Cached data is older than seven days. Make a new cache at: {self.filepath}")
+                self.using_cache = False
+                logging.debug(f"cache.using_cache is: {self.using_cache}")
+                fakecache = open(self.filepath, 'w+')
+        else:
+            # Make the file
+            logging.info(f"No cache file found. Make a new cache at: {self.filepath}")
+            self.using_cache = False
+            logging.debug(f"FakeCache.using_cache is: {self.using_cache}")
+            fakecache = open(self.filepath, 'w+')
+
+    def load_cache(self):
+        """Take the fresh cache and put it into an object."""
+        fakecache = open(self.filepath, 'r')
+        return json.load(fakecache)
+
+    def is_cache_empty(self):
+        """Determines if the cache has little or no data, though it might be fresh."""
+        logging.debug("Starting is_cache_empty()")
+        logging.info(f"Checking if {self.filepath} contains no/little data")
+        filesize = stat(self.filepath).st_size
+        if filesize < 3:
+            logging.debug("is_cache_empty() returns: True")
+            return True
+        else:
+            logging.debug("is_cache_empty() returns: False")
+            return False
+
+    def is_using_cache(self):
+        """Returns whether or not the cache should be used."""
+        return self.using_cache
