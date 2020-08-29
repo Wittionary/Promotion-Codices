@@ -135,9 +135,11 @@ class FakeCache:
         logging.debug(f"FakeCache.filepath is: {self.filepath}")
         self.using_cache = False
         logging.debug(f"FakeCache.using_cache initialized to: {self.using_cache}")
+        self.file_object = None
 
-    def validate_cache(self):
-        """Check the cache to see if it has stale or fresh data."""
+    # This function is doing too much. Split it into further functions.
+    def load_cache(self):
+        """Check the cache to see if it has stale or fresh data. Load if exists and up-to-date otherwise create new object."""
         logging.info("Check cache for data")
         if path.exists(self.filepath):
             # Check to see if it's been recently made (past 7 days) 
@@ -149,24 +151,25 @@ class FakeCache:
                 logging.info(f"Using the cached data at: {self.filepath}")
                 self.using_cache = True
                 logging.debug(f"FakeCache.using_cache is: {self.using_cache}")
-                # now load_cache()
+                with open(self.filepath, 'r') as file_object:
+                    self.file_object = file_object
+                return json.load(self.file_object)
             else:
                 # Don't use the file, make a new one
                 logging.info(f"Cached data is older than seven days. Make a new cache at: {self.filepath}")
                 self.using_cache = False
                 logging.debug(f"cache.using_cache is: {self.using_cache}")
-                fakecache = open(self.filepath, 'w+')
+                with open(self.filepath, 'w+') as file_object:
+                    self.file_object = file_object
+                return self.file_object
         else:
             # Make the file
             logging.info(f"No cache file found. Make a new cache at: {self.filepath}")
             self.using_cache = False
             logging.debug(f"FakeCache.using_cache is: {self.using_cache}")
-            fakecache = open(self.filepath, 'w+')
-
-    def load_cache(self):
-        """Take the fresh cache and put it into an object."""
-        fakecache = open(self.filepath, 'r')
-        return json.load(fakecache)
+            with open(self.filepath, 'w+') as file_object:
+                self.file_object = file_object
+            return self.file_object
 
     def is_cache_empty(self):
         """Determines if the cache has little or no data, though it might be fresh."""
