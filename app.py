@@ -23,7 +23,9 @@ else:
     relay_fm.get_episode_urls()
     relay_fm.get_promo_codes()
     logging.info(f"Writing database object to {cache.filepath}")
-    json.dump(relay_fm.show_catalog, cache.file_object)
+    with open(cache.filepath, 'w') as file_object:
+        json.dump(relay_fm.show_catalog, cache.file_object)
+    
 
 if cache.is_cache_empty():
     logging.info("Deleting empty FakeCache file")
